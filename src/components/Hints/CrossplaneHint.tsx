@@ -58,11 +58,6 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
   const totalCount = allItems.length;
 
   const progressValue = totalCount > 0 ? Math.round((healthyCount / totalCount) * 100) : 0;
-  const progressDisplay = enabled
-    ? allItems.length > 0
-      ? `${Math.round((healthyCount / totalCount) * 100)}${t('Hints.CrossplaneHint.progressAvailable')}`
-      : t('Hints.CrossplaneHint.noResources')
-    : t('Hints.CrossplaneHint.inactive');
   const progressValueState = enabled
     ? allItems.length > 0
       ? healthyCount >= totalCount / 2 && totalCount > 0
@@ -126,21 +121,38 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
               }}
             />
           ) : (
-            <ProgressIndicator
-              value={progressValue}
-              displayValue={progressDisplay}
-              valueState={progressValueState}
-              style={{ 
-                width: '80%', 
-                maxWidth: 500, 
-                minWidth: 120,
-              }}
-            />
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+              <ProgressIndicator
+                value={progressValue}
+                displayValue={enabled
+                  ? allItems.length > 0
+                    ? `${progressValue}% ${t('Hints.CrossplaneHint.progressAvailable')}`
+                    : t('Hints.CrossplaneHint.noResources')
+                  : t('Hints.CrossplaneHint.inactive')
+                }
+                valueState={progressValueState}
+                style={{ 
+                  width: '80%', 
+                  maxWidth: 500, 
+                  minWidth: 120,
+                }}
+              />
+              <ProgressIndicator
+                value={100 - progressValue}
+                displayValue={enabled && allItems.length > 0 ? `${100 - progressValue}% Unhealthy` : ''}
+                valueState="Critical"
+                style={{ 
+                  width: '80%', 
+                  maxWidth: 500, 
+                  minWidth: 120,
+                }}
+              />
+            </div>
           )}
         </div>
         {/* Minimal RadarChart for resource healthiness, only show on hover */}
         {hovered && !isLoading && !error && radarDataset.length > 0 && (
-          <div style={{ width: 260, height: 260, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1rem 0', overflow: 'visible' }}>
+          <div style={{ position: 'relative', width: 260, height: 260, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1rem 0', overflow: 'visible' }}>
             <RadarChart
               dataset={radarDataset}
               dimensions={[{ accessor: 'type' }]}

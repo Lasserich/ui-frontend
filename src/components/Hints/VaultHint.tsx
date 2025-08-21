@@ -62,7 +62,7 @@ export const VaultHint: React.FC<VaultHintProps> = ({
             />
           ) : (
             <ProgressIndicator
-              value={allItems.length > 0 ? 100 : 0}
+              value={allItems.length > 0 ? 0 : 0}
               displayValue={enabled ? (allItems.length > 0 ? `100${t('Hints.VaultHint.progressAvailable')}` : t('Hints.VaultHint.noResources')) : t('Hints.VaultHint.inactive')}
               valueState={enabled ? (allItems.length > 0 ? 'Positive' : 'None') : 'None'}
               style={{ width: '80%', maxWidth: 500, minWidth: 120 }}
