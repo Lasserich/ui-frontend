@@ -1,8 +1,9 @@
 import { Card, CardHeader, ProgressIndicator, Button } from '@ui5/webcomponents-react';
 import { useTranslation } from 'react-i18next';
 import { APIError } from '../../lib/api/error';
-import { getDisabledCardStyle } from './Hints';
 import { ManagedResourceItem } from '../../lib/shared/types';
+import cx from 'clsx';
+import styles from './Hints.module.css';
 
 interface GitOpsHintProps {
   enabled?: boolean;
@@ -48,7 +49,9 @@ export const GitOpsHint: React.FC<GitOpsHintProps> = ({
       : 'None'
     : 'None';
 
-  const cardStyle = enabled ? {} : getDisabledCardStyle();
+  const cardClassName = cx({
+    [styles.disabled]: !enabled,
+  });
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
@@ -68,7 +71,7 @@ export const GitOpsHint: React.FC<GitOpsHintProps> = ({
             interactive={true}
           />
         }
-        style={cardStyle}
+        className={cardClassName}
         onClick={() => {
           const el = document.querySelector('.cp-page-section-gitops');
           if (el) {

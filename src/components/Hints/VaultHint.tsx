@@ -1,8 +1,9 @@
 import { Card, CardHeader, ProgressIndicator, Button } from '@ui5/webcomponents-react';
 import { useTranslation } from 'react-i18next';
 import { APIError } from '../../lib/api/error';
-import { getDisabledCardStyle } from './Hints';
 import { ManagedResourceItem } from '../../lib/shared/types';
+import cx from 'clsx';
+import styles from './Hints.module.css';
 
 interface VaultHintProps {
   enabled?: boolean;
@@ -23,7 +24,9 @@ export const VaultHint: React.FC<VaultHintProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const cardStyle = enabled ? {} : getDisabledCardStyle();
+  const cardClassName = cx({
+    [styles.disabled]: !enabled,
+  });
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
@@ -43,7 +46,7 @@ export const VaultHint: React.FC<VaultHintProps> = ({
             interactive={false}
           />
         }
-        style={cardStyle}
+        className={cardClassName}
       >
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem 0' }}>
           {isLoading ? (
@@ -62,7 +65,7 @@ export const VaultHint: React.FC<VaultHintProps> = ({
             />
           ) : (
             <ProgressIndicator
-              value={allItems.length > 0 ? 100 : 0}
+              value={allItems.length > 0 ? 0 : 0}
               displayValue={enabled ? (allItems.length > 0 ? `100${t('Hints.VaultHint.progressAvailable')}` : t('Hints.VaultHint.noResources')) : t('Hints.VaultHint.inactive')}
               valueState={enabled ? (allItems.length > 0 ? 'Positive' : 'None') : 'None'}
               style={{ width: '80%', maxWidth: 500, minWidth: 120 }}

@@ -14,13 +14,6 @@ interface HintsProps {
   mcp: ControlPlaneType;
 }
 
-// Utility function to create disabled card style
-export const getDisabledCardStyle = () => ({
-  background: '#f3f3f3',
-  filter: 'grayscale(0.7)',
-  opacity: 0.7,
-});
-
 // Utility function to flatten managed resources
 export const flattenManagedResources = (managedResources: any): ManagedResourceItem[] => {
   if (!managedResources || !Array.isArray(managedResources)) return [];
