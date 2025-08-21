@@ -1,7 +1,8 @@
 import { Card, CardHeader, ProgressIndicator, Button } from '@ui5/webcomponents-react';
 import { useTranslation } from 'react-i18next';
+import cx from 'clsx';
 import { APIError } from '../../lib/api/error';
-import { getDisabledCardStyle } from './Hints';
+import { styles } from './Hints';
 import { ManagedResourceItem } from '../../lib/shared/types';
 
 interface VaultHintProps {
@@ -23,8 +24,6 @@ export const VaultHint: React.FC<VaultHintProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const cardStyle = enabled ? {} : getDisabledCardStyle();
-
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <Card
@@ -43,8 +42,12 @@ export const VaultHint: React.FC<VaultHintProps> = ({
             interactive={false}
           />
         }
-        style={cardStyle}
+        className={cx({
+          [styles['disabled']]: !enabled,
+        })}
       >
+        {/* Disabled overlay */}
+        {!enabled && <div className={styles.disabledOverlay} />}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem 0' }}>
           {isLoading ? (
             <ProgressIndicator

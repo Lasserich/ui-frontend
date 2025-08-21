@@ -1,8 +1,9 @@
 import { Card, CardHeader, Button } from '@ui5/webcomponents-react';
 import { BarChart } from '@ui5/webcomponents-react-charts';
 import { useTranslation } from 'react-i18next';
+import cx from 'clsx';
 import { APIError } from '../../lib/api/error';
-import { getDisabledCardStyle } from './Hints';
+import { styles } from './Hints';
 import { ManagedResourceItem, Condition } from '../../lib/shared/types';
 import React from 'react';
 
@@ -24,8 +25,6 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
   error,
 }) => {
   const { t } = useTranslation();
-
-  const cardStyle = enabled ? {} : getDisabledCardStyle();
 
   // Aggregate all resources by status
   const totalCount = allItems.length;
@@ -68,17 +67,23 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
             }
             titleText={t('Hints.CrossplaneHint.title')}
             subtitleText={t('Hints.CrossplaneHint.subtitle')}
-            interactive={true}
+            interactive={enabled}
           />
         }
-        style={cardStyle}
-        onClick={() => {
+        className={cx({
+          [styles['disabled']]: !enabled,
+        })}
+        onClick={enabled ? () => {
           const el = document.querySelector('.crossplane-table-element');
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
+        {/* Disabled overlay */}
+        {!enabled && <div className={styles.disabledOverlay} />}
         
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem 0', gap: '0.5rem' }}>
           {isLoading ? (
@@ -152,6 +157,22 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
             </>
           )}
         </div>
+        {/* Minimal RadarChart for resource healthiness, only show on hover */}
+        {hovered && !isLoading && !error && radarDataset.length > 0 && (
+          <div style={{ width: 260, height: 260, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1rem 0', overflow: 'visible' }}>
+            <RadarChart
+              dataset={radarDataset}
+              dimensions={[{ accessor: 'type' }]}
+              measures={[{
+                accessor: 'health',
+                color: 'green',
+                hideDataLabel: true,
+              }]}
+              style={{ width: 220, height: 220 }}
+              noLegend={true}
+            />
+          </div>
+        )}
         {!enabled && (
           <div
             style={{
