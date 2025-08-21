@@ -1,5 +1,5 @@
-import { Card, CardHeader, ProgressIndicator, Button } from '@ui5/webcomponents-react';
-import { RadarChart } from '@ui5/webcomponents-react-charts';
+import { Card, CardHeader, Button } from '@ui5/webcomponents-react';
+import { BarChart } from '@ui5/webcomponents-react-charts';
 import { useTranslation } from 'react-i18next';
 import { APIError } from '../../lib/api/error';
 import { getDisabledCardStyle } from './Hints';
@@ -27,51 +27,31 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
 
   const cardStyle = enabled ? {} : getDisabledCardStyle();
 
-  // Aggregate healthiness by resource type
-  const resourceTypeHealth: Record<string, number> = {};
-  const resourceTypeTotal: Record<string, number> = {};
-  allItems.forEach((item: ManagedResourceItem) => {
-    const type = item.kind || 'Unknown';
-    resourceTypeTotal[type] = (resourceTypeTotal[type] || 0) + 1;
-    const conditions = item.status?.conditions || [];
-    const ready = conditions.find((c: Condition) => c.type === 'Ready' && c.status === 'True');
-    const synced = conditions.find((c: Condition) => c.type === 'Synced' && c.status === 'True');
-    if (ready && synced) {
-      resourceTypeHealth[type] = (resourceTypeHealth[type] || 0) + 1;
-    }
-  });
-
-  // Prepare radar chart dataset: each resource type is a dimension, value is percent healthy
-  const radarDataset = Object.keys(resourceTypeTotal).map(type => ({
-    type,
-    health: `${Math.round(((resourceTypeHealth[type] || 0) / resourceTypeTotal[type]) * 100)}%`
-  }));
-
-  // Progress bar logic (unchanged)
+  // Aggregate all resources by status
+  const totalCount = allItems.length;
   const healthyCount = allItems.filter((item: ManagedResourceItem) => {
     const conditions = item.status?.conditions || [];
     const ready = conditions.find((c: Condition) => c.type === 'Ready' && c.status === 'True');
     const synced = conditions.find((c: Condition) => c.type === 'Synced' && c.status === 'True');
     return !!ready && !!synced;
   }).length;
+  
+  const creatingCount = allItems.filter(item => {
+    const conditions = item.status?.conditions || [];
+    const readyCondition = conditions.find((c: Condition) => c.type === 'Ready');
+    return readyCondition && readyCondition.status === 'False' && 
+      (readyCondition.reason?.includes('Creating') || readyCondition.reason?.includes('Pending'));
+  }).length;
+  
+  const unhealthyCount = totalCount - healthyCount - creatingCount;
 
-  const totalCount = allItems.length;
-
-  const progressValue = totalCount > 0 ? Math.round((healthyCount / totalCount) * 100) : 0;
-  const progressDisplay = enabled
-    ? allItems.length > 0
-      ? `${Math.round((healthyCount / totalCount) * 100)}${t('Hints.CrossplaneHint.progressAvailable')}`
-      : t('Hints.CrossplaneHint.noResources')
-    : t('Hints.CrossplaneHint.inactive');
-  const progressValueState = enabled
-    ? allItems.length > 0
-      ? healthyCount >= totalCount / 2 && totalCount > 0
-        ? 'Positive'
-        : 'Critical'
-      : 'None'
-    : 'None';
-
-  const [hovered, setHovered] = React.useState(false);
+  // Prepare single aggregated bar chart dataset with normalized percentages
+  const barChartDataset = totalCount > 0 ? [{
+    name: '',
+    healthy: Math.round((healthyCount / totalCount) * 100),
+    creating: Math.round((creatingCount / totalCount) * 100),
+    unhealthy: Math.round((unhealthyCount / totalCount) * 100),
+  }] : [];
 
   return (
     <div style={{ position: 'relative', width: '100%' }}>
@@ -98,62 +78,80 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem 0', gap: '0.5rem' }}>
           {isLoading ? (
-            <ProgressIndicator
-              value={0}
-              displayValue={t('Hints.common.loading')}
-              valueState="None"
-              style={{ 
-                width: '80%', 
-                maxWidth: 500, 
-                minWidth: 120,
-              }}
-            />
+            <div style={{ fontSize: '0.875rem', color: '#6A6D70' }}>
+              {t('Hints.common.loading')}
+            </div>
           ) : error ? (
-            <ProgressIndicator
-              value={0}
-              displayValue={t('Hints.common.errorLoadingResources')}
-              valueState="Negative"
-              style={{ 
-                width: '80%', 
-                maxWidth: 500, 
-                minWidth: 120,
-              }}
-            />
+            <div style={{ fontSize: '0.875rem', color: '#BB0000' }}>
+              {t('Hints.common.errorLoadingResources')}
+            </div>
           ) : (
-            <ProgressIndicator
-              value={progressValue}
-              displayValue={progressDisplay}
-              valueState={progressValueState}
-              style={{ 
-                width: '80%', 
-                maxWidth: 500, 
-                minWidth: 120,
-              }}
-            />
+            <>
+              {enabled && allItems.length > 0 ? (
+                <div style={{ width: '100%', maxWidth: 400, minWidth: 250, height: 120 }}>
+                  <BarChart
+                    dataset={barChartDataset}
+                    dimensions={[{ accessor: 'name' }]}
+                    measures={[
+                      {
+                        accessor: 'healthy',
+                        color: '#107E3E',
+                        stackId: 'status',
+                        formatter: (value: number) => `${value}%`
+                      },
+                      {
+                        accessor: 'creating',
+                        color: '#E9730C',
+                        stackId: 'status',
+                        formatter: (value: number) => `${value}%`
+                      },
+                      {
+                        accessor: 'unhealthy',
+                        color: '#BB0000',
+                        stackId: 'status',
+                        formatter: (value: number) => `${value}%`
+                      }
+                    ]}
+                    style={{ 
+                      width: '100%', 
+                      height: '100%',
+                      borderRadius: '8px',
+                      overflow: 'hidden'
+                    }}
+
+                  />
+                </div>
+              ) : enabled ? (
+                <div style={{ fontSize: '0.875rem', color: '#6A6D70' }}>
+                  {t('Hints.CrossplaneHint.noResources')}
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.875rem', color: '#6A6D70' }}>
+                  {t('Hints.CrossplaneHint.inactive')}
+                </div>
+              )}
+              
+              {/* Summary stats */}
+              {enabled && allItems.length > 0 && (
+                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#6A6D70' }}>
+                  <span style={{ color: '#107E3E' }}>
+                    {healthyCount} {t('Hints.CrossplaneHint.healthy')}
+                  </span>
+                  <span style={{ color: '#E9730C' }}>
+                    {creatingCount} Creating
+                  </span>
+                  <span style={{ color: '#BB0000' }}>
+                    {unhealthyCount} {t('Hints.CrossplaneHint.unhealthy')}
+                  </span>
+                </div>
+              )}
+            </>
           )}
         </div>
-        {/* Minimal RadarChart for resource healthiness, only show on hover */}
-        {hovered && !isLoading && !error && radarDataset.length > 0 && (
-          <div style={{ width: 260, height: 260, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '1rem 0', overflow: 'visible' }}>
-            <RadarChart
-              dataset={radarDataset}
-              dimensions={[{ accessor: 'type' }]}
-              measures={[{
-                accessor: 'health',
-                color: 'green',
-                hideDataLabel: true,
-              }]}
-              style={{ width: 220, height: 220 }}
-              noLegend={true}
-            />
-          </div>
-        )}
         {!enabled && (
           <div
             style={{

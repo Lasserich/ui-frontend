@@ -370,7 +370,10 @@
       "progressAvailable": "% Available",
       "noResources": "No Resources",
       "inactive": "Inactive",
-      "activate": "Activate"
+      "activate": "Activate",
+      "healthy": "Healthy",
+      "unhealthy": "Unhealthy",
+      "unhealthyResources": "Unhealthy Resources"
     },
     "GitOpsHint": {
       "title": "Flux",
