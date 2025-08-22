@@ -3,6 +3,7 @@ import { RadarChart } from '@ui5/webcomponents-react-charts';
 import { useTranslation } from 'react-i18next';
 import { APIError } from '../../lib/api/error';
 import { ManagedResourceItem, Condition } from '../../lib/shared/types';
+import { MultiPercentageBar } from '../Shared/MultiPercentageBar';
 import cx from 'clsx';
 import styles from './Hints.module.css';
 import React from 'react';
@@ -136,7 +137,7 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
                 const creatingPercentage = totalCount > 0 ? Math.round((creatingCount / totalCount) * 100) : 0;
                 const unhealthyPercentage = totalCount > 0 ? Math.round((unhealthyCount / totalCount) * 100) : 0;
 
-                const cards = [
+                const segments = [
                   {
                     percentage: healthyPercentage,
                     color: '#107e3e',
@@ -152,45 +153,13 @@ export const CrossplaneHint: React.FC<CrossplaneHintProps> = ({
                     color: '#b00',
                     label: 'Unhealthy'
                   }
-                ].filter(card => card.percentage > 0);
+                ];
 
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', width: '100%' }}>
-                    {/* Slim cards */}
-                    <div style={{ display: 'flex', gap: '4px', width: '80%', maxWidth: '400px' }}>
-                      {cards.map((card, index) => (
-                        <div 
-                          key={index}
-                          style={{
-                            flex: card.percentage,
-                            minWidth: '10px',
-                            backgroundColor: card.color,
-                            borderRadius: '6px',
-                            height: '8px'
-                          }}
-                        />
-                      ))}
-                    </div>
-                    
-                    {/* Colored labels below */}
-                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
-                      {cards.map((card, index) => (
-                        <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <div 
-                            style={{
-                              width: '12px',
-                              height: '12px',
-                              backgroundColor: card.color,
-                              borderRadius: '3px'
-                            }}
-                          />
-                          <span style={{ fontSize: '0.875rem', color: '#333', fontWeight: '500' }}>
-                            {card.label}: {card.percentage}%
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <MultiPercentageBar 
+                    segments={segments}
+                    style={{ width: '100%' }}
+                  />
                 );
               })()}
             </div>
