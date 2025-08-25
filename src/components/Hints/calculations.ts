@@ -332,38 +332,36 @@ export const calculateCrossplaneHoverDataGeneric: HoverDataCalculator = (
 
   // Get the segments from the bar chart calculation to ensure color consistency
   const segmentData = calculateCrossplaneSegments(allItems, false, undefined, enabled, t);
-  
-  const legendItems = segmentData.segments.map(segment => ({
+
+  const legendItems = segmentData.segments.map((segment) => ({
     label: segment.label,
-    count: segment.label === t('common.healthy') ? overallStats.healthy :
-           segment.label === t('common.creating') ? overallStats.creating :
-           overallStats.unhealthy,
+    count:
+      segment.label === t('common.healthy')
+        ? overallStats.healthy
+        : segment.label === t('common.creating')
+          ? overallStats.creating
+          : overallStats.unhealthy,
     color: segment.color,
   }));
 
-  // Focus on healthy percentage in radar chart (the positive aspect)
-  const radarDataset = resourceTypeStats.map((stats) => ({
-    type: stats.type,
-    healthy: stats.healthyPercentage,
-  }));
-
-  // Use the color of the healthy segment (first segment in the bar chart)
-  const healthyColor = segmentData.segments.find(s => s.label === t('common.healthy'))?.color || HINT_COLORS.healthy;
+  // Convert resourceTypeStats to failingResources format
+  // Focus on the most problematic resources (highest failure counts and rates)
+  const failingResources = resourceTypeStats
+    .filter((stats) => stats.unhealthy > 0 || stats.creating > 0) // Only include resources with issues
+    .map((stats) => ({
+      name: stats.type,
+      failureCount: stats.unhealthy + stats.creating, // Count both unhealthy and creating as "failing"
+      totalCount: stats.total,
+      failureRate: Math.round(((stats.unhealthy + stats.creating) / stats.total) * 100),
+      color: stats.unhealthy > 0 ? HINT_COLORS.unhealthy : HINT_COLORS.creating,
+    }))
+    .sort((a, b) => b.failureCount - a.failureCount); // Sort by failure count descending
 
   return {
     totalCount: overallStats.total,
     totalLabel: t('Hints.CrossplaneHint.hoverContent.totalResources'),
     legendItems,
-    radarDataset,
-    radarDimensions: [{ accessor: 'type' }],
-    radarMeasures: [
-      {
-        accessor: 'healthy',
-        color: healthyColor,
-        hideDataLabel: true,
-        label: t('Hints.CrossplaneHint.hoverContent.healthy') + ' (%)',
-      },
-    ],
+    failingResources,
   };
 };
 
@@ -407,39 +405,33 @@ export const calculateGitOpsHoverDataGeneric: HoverDataCalculator = (
 
   // Get the segments from the bar chart calculation to ensure color consistency
   const segmentData = calculateGitOpsSegments(allItems, false, undefined, enabled, t);
-  
-  const legendItems = segmentData.segments.map(segment => ({
+
+  const legendItems = segmentData.segments.map((segment) => ({
     label: segment.label,
     count: segment.label === t('common.progress') ? totalManaged : totalUnmanaged,
     color: segment.color,
   }));
 
-  // Focus on managed percentage in radar chart (the positive aspect)
-  const radarDataset = Object.keys(typeStats).map((type) => {
-    const stats = typeStats[type];
-    const managedPercentage = Math.round((stats.managed / stats.total) * 100);
-    return {
-      type,
-      managed: managedPercentage,
-    };
-  });
-
-  // Use the color of the progress/managed segment (first segment in the bar chart)
-  const managedColor = segmentData.segments.find(s => s.label === t('common.progress'))?.color || HINT_COLORS.managed;
+  // Convert to failingResources format - focus on unmanaged resources as "failing"
+  const failingResources = Object.keys(typeStats)
+    .map((type) => {
+      const stats = typeStats[type];
+      const unmanaged = stats.total - stats.managed;
+      return {
+        name: type,
+        failureCount: unmanaged,
+        totalCount: stats.total,
+        failureRate: Math.round((unmanaged / stats.total) * 100),
+        color: HINT_COLORS.unhealthy, // Use consistent color for unmanaged resources
+      };
+    })
+    .filter((resource) => resource.failureCount > 0) // Only show types with unmanaged resources
+    .sort((a, b) => b.failureCount - a.failureCount); // Sort by unmanaged count descending
 
   return {
     totalCount: allItems.length,
     totalLabel: t('Hints.GitOpsHint.hoverContent.totalResources'),
     legendItems,
-    radarDataset,
-    radarDimensions: [{ accessor: 'type' }],
-    radarMeasures: [
-      {
-        accessor: 'managed',
-        color: managedColor,
-        hideDataLabel: true,
-        label: t('Hints.GitOpsHint.hoverContent.managed') + ' (%)',
-      },
-    ],
+    failingResources,
   };
 };

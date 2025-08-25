@@ -94,21 +94,11 @@ export const GenericHint: React.FC<GenericHintProps> = ({
           hovered &&
           !isLoading &&
           !error &&
-          config.calculateHoverData && (
-            (() => {
-              const hoverData = config.calculateHoverData(allItems, enabled, t);
-              return hoverData ? <HoverContent enabled={enabled} {...hoverData} /> : null;
-            })()
-          )}
-
-        {/* Legacy hover content support */}
-        {enabled &&
-          hovered &&
-          !isLoading &&
-          !error &&
-          !config.calculateHoverData &&
-          config.renderHoverContent &&
-          config.renderHoverContent(allItems, enabled)}
+          config.calculateHoverData &&
+          (() => {
+            const hoverData = config.calculateHoverData(allItems, enabled, t);
+            return hoverData ? <HoverContent enabled={enabled} {...hoverData} /> : null;
+          })()}
 
         {/* Activate button for disabled state */}
         {!enabled && (
@@ -121,10 +111,10 @@ export const GenericHint: React.FC<GenericHintProps> = ({
               pointerEvents: 'auto',
             }}
           >
-            <MessageViewButton 
-              type={"Information"} 
-              onClick={onActivate}
+            <MessageViewButton
+              type={'Information'}
               style={{ cursor: onActivate ? 'pointer' : 'default' }}
+              onClick={onActivate}
             />
           </div>
         )}
